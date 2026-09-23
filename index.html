@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>LockCard</title>
+  <!-- Favicon -->
+
+
+ <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+ <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+ <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+   <link rel="stylesheet" href="style.css">
+</head>
+<body>
+ <header class="lockcard-header">
+   <nav class="navbar navbar-expand-lg">
+     <div class="container">
+       <a class="navbar-brand" href="index.html">
+         <span class="navbar-logo-text">LockCard</span>
+       </a>
+      
+       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+         <span class="navbar-toggler-icon"></span>
+       </button>
+      
+       <div class="collapse navbar-collapse" id="navbarNav">
+         <ul class="navbar-nav ms-auto">
+           <li class="nav-item">
+             <a class="nav-link active" href="#dashboard">Dashboard</a>
+           </li>
+           <li class="nav-item">
+             <a class="nav-link" href="#usuarios">Usuários</a>
+           </li>
+           <li class="nav-item">
+             <a class="nav-link" href="#cartoes">Cartões</a>
+           </li>
+           <li class="nav-item">
+             <a class="nav-link" href="#acessos">Acessos</a>
+           </li>
+           <li class="nav-item">
+             <a class="nav-link" href="#portas">Portas</a>
+           </li>
+           <li class="nav-item">
+             <a class="nav-link" href="#relatorios">Relatórios</a>
+           </li>
+         </ul>
+        
+         <div class="ms-3">
+           <button class="btn btn-outline-light btn-sm">
+             <i class="bi bi-person-circle"></i> Admin
+           </button>
+         </div>
+       </div>
+     </div>
+   </nav>
+ </header>
+  <main class="lockcard-main">
+   <div class="container-fluid py-4">
+     <div class="row">
+      
+       <div class="col-md-3 col-lg-2">
+         <div class="sidebar">
+           <div class="sidebar-header">
+             <span class="sidebar-logo-text">LockCard</span>
+           </div>
+          
+           <nav class="nav flex-column">
+             <a class="nav-link active" href="#dashboard" data-section="dashboard">
+               <i class="bi bi-speedometer2"></i>
+               <span>Dashboard</span>
+             </a>
+             <a class="nav-link" href="#usuarios" data-section="usuarios">
+               <i class="bi bi-people"></i>
+               <span>Usuários</span>
+             </a>
+             <a class="nav-link" href="#cartoes" data-section="cartoes">
+               <i class="bi bi-credit-card-2-front"></i>
+               <span>Cartões</span>
+             </a>
+             <a class="nav-link" href="#acessos" data-section="acessos">
+               <i class="bi bi-clock-history"></i>
+               <span>Registros de Acesso</span>
+             </a>
+             <a class="nav-link" href="#portas" data-section="portas">
+               <i class="bi bi-door-open"></i>
+               <span>Portas</span>
+             </a>
+             <a class="nav-link" href="#relatorios" data-section="relatorios">
+               <i class="bi bi-graph-up-arrow"></i>
+               <span>Relatórios</span>
+             </a>
+           </nav>
+          
+           <div class="sidebar-footer">
+             <div class="card stats-mini">
+               <div class="card-body">
+                 <small class="text-muted">Sistema Online</small>
+                 <div class="d-flex align-items-center mt-2">
+                   <div class="status-indicator"></div>
+                   <span class="ms-2 fw-semibold">Ativo</span>
+                 </div>
+               </div>
+             </div>
+           </div>
+         </div>
+       </div>
+      
+       <div class="col-md-9 col-lg-10">
+        
+         <section id="dashboard" class="content-section">
+           <div class="section-header">
+             <h2><i class="bi bi-speedometer2"></i> Dashboard</h2>
+             <p class="text-muted">Visão geral do sistema de controle de acesso</p>
+           </div>
+          
+           <div class="row g-4 mb-4">
+             <div class="col-md-3">
+               <div class="stat-card stat-card-1">
+                 <div class="stat-icon">
+                   <i class="bi bi-people-fill"></i>
+                 </div>
+                 <div class="stat-content">
+                   <h3 class="stat-number">150</h3>
+                   <p class="stat-label">Usuários Cadastrados</p>
+                 </div>
+               </div>
+             </div>
+            
+             <div class="col-md-3">
+               <div class="stat-card stat-card-2">
+                 <div class="stat-icon">
+                   <i class="bi bi-credit-card-2-front-fill"></i>
+                 </div>
+                 <div class="stat-content">
+                   <h3 class="stat-number">180</h3>
+                   <p class="stat-label">Cartões Ativos</p>
+                 </div>
+               </div>
+             </div>
+            
+             <div class="col-md-3">
+               <div class="stat-card stat-card-3">
+                 <div class="stat-icon">
+                   <i class="bi bi-door-open-fill"></i>
+                 </div>
+                 <div class="stat-content">
+                   <h3 class="stat-number">12</h3>
+                   <p class="stat-label">Portas Monitoradas</p>
+                 </div>
+               </div>
+             </div>
+            
+             <div class="col-md-3">
+               <div class="stat-card stat-card-4">
+                 <div class="stat-icon">
+                   <i class="bi bi-check-circle-fill"></i>
+                 </div>
+                 <div class="stat-content">
+                   <h3 class="stat-number">1,247</h3>
+                   <p class="stat-label">Acessos Hoje</p>
+                 </div>
+               </div>
+             </div>
+           </div>
+          
+           <div class="row g-4">
+             <div class="col-md-8">
+               <div class="card custom-card">
+                 <div class="card-header">
+                   <h5><i class="bi bi-graph-up"></i> Acessos por Hora</h5>
+                 </div>
+                 <div class="card-body">
+                   <canvas id="acessosChart" height="200"></canvas>
+                 </div>
+               </div>
+             </div>
+            
+             <div class="col-md-4">
+               <div class="card custom-card">
+                 <div class="card-header">
+                   <h5><i class="bi bi-bell-fill"></i> Últimos Acessos</h5>
+                 </div>
+                 <div class="card-body p-0">
+                   <div class="list-group list-group-flush">
+                     <div class="list-group-item d-flex justify-content-between align-items-center">
+                       <div>
+                         <strong>Usuário 1</strong><br>
+                         <small class="text-muted">Porta Principal - 14:32</small>
+                       </div>
+                       <span class="badge bg-success">Permitido</span>
+                     </div>
+                     <div class="list-group-item d-flex justify-content-between align-items-center">
+                       <div>
+                         <strong>Usuário 2</strong><br>
+                         <small class="text-muted">Academia - 14:28</small>
+                       </div>
+                       <span class="badge bg-success">Permitido</span>
+                     </div>
+                     <div class="list-group-item d-flex justify-content-between align-items-center">
+                       <div>
+                         <strong>Usuário 3</strong><br>
+                         <small class="text-muted">Porta Principal - 14:25</small>
+                       </div>
+                       <span class="badge bg-danger">Negado</span>
+                     </div>
+                     <div class="list-group-item d-flex justify-content-between align-items-center">
+                       <div>
+                         <strong>Usuário 4</strong><br>
+                         <small class="text-muted">Sala de Reunião - 14:20</small>
+                       </div>
+                       <span class="badge bg-success">Permitido</span>
+                     </div>
+                     <div class="list-group-item d-flex justify-content-between align-items-center">
+                       <div>
+                         <strong>Usuário 5</strong><br>
+                         <small class="text-muted">Estacionamento - 14:15</small>
+                       </div>
+                       <span class="badge bg-success">Permitido</span>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             </div>
+           </div>
+         </section>
+        
+         <section id="usuarios" class="content-section" style="display: none;">
+           <div class="section-header">
+             <h2><i class="bi bi-people-fill"></i> Gerenciar Usuários</h2>
+             <p class="text-muted">Cadastre e gerencie os usuários do sistema</p>
+           </div>
+          
+           <div class="d-flex justify-content-between align-items-center mb-4">
+             <button class="btn btn-primary-lockcard" data-bs-toggle="modal" data-bs-target="#modalUsuario">
+               <i class="bi bi-plus-circle"></i> Novo Usuário
+             </button>
+             <input type="search" class="form-control search-input" data-search-table="usuarios" placeholder="Buscar usuário..." style="width: 300px;">
+           </div>
+          
+           <div class="card custom-card">
+             <div class="card-body p-0">
+               <div class="table-responsive">
+                 <table class="table table-hover mb-0">
+                   <thead>
+                     <tr>
+                       <th>ID</th>
+                       <th>Nome</th>
+                       <th>Email</th>
+                       <th>Telefone</th>
+                       <th>Status</th>
+                       <th>Ações</th>
+                     </tr>
+                   </thead>
+                   <tbody>
+                     <tr>
+                       <td>1</td>
+                       <td>Usuário 1</td>
+                       <td>user1@email.com</td>
+                       <td>(DDD) XXXXX-XXXX</td>
+                       <td><span class="status-badge status-ativo">Ativo</span></td>
+                       <td>
+                         <button class="btn btn-sm btn-outline-primary-lockcard me-1">
+                           <i class="bi bi-pencil"></i>
+                         </button>
+                         <button class="btn btn-sm btn-outline-danger">
+                           <i class="bi bi-trash"></i>
+                         </button>
+                       </td>
+                     </tr>
+                     <tr>
+                       <td>2</td>
+                       <td>Usuário 2</td>
+                       <td>user2@email.com</td>
+                       <td>(DDD) XXXXX-XXXX</td>
+                       <td><span class="status-badge status-ativo">Ativo</span></td>
+                       <td>
+                         <button class="btn btn-sm btn-outline-primary-lockcard me-1">
+                           <i class="bi bi-pencil"></i>
+                         </button>
+                         <button class="btn btn-sm btn-outline-danger">
+                           <i class="bi bi-trash"></i>
+                         </button>
+                       </td>
+                     </tr>
+                     <tr>
+                       <td>3</td>
+                       <td>Usuário 3</td>
+                       <td>user3@email.com</td>
+                       <td>(DDD) XXXXX-XXXX</td>
+                       <td><span class="status-badge status-inativo">Inativo</span></td>
+                       <td>
+                         <button class="btn btn-sm btn-outline-primary-lockcard me-1">
+                           <i class="bi bi-pencil"></i>
+                         </button>
+                         <button class="btn btn-sm btn-outline-danger">
+                           <i class="bi bi-trash"></i>
+                         </button>
+                       </td>
+                     </tr>
+                   </tbody>
+                 </table>
+               </div>
+             </div>
+           </div>
+         </section>
+        
+         <section id="cartoes" class="content-section" style="display: none;">
+           <div class="section-header">
+             <h2><i class="bi bi-credit-card-2-front-fill"></i> Gerenciar Cartões</h2>
+             <p class="text-muted">Cadastre e gerencie os cartões de acesso</p>
+           </div>
+          
+           <div class="d-flex justify-content-between align-items-center mb-4">
+             <button class="btn btn-primary-lockcard" data-bs-toggle="modal" data-bs-target="#modalCartao">
+               <i class="bi bi-plus-circle"></i> Novo Cartão
+             </button>
+             <input type="search" class="form-control search-input" data-search-table="cartoes" placeholder="Buscar cartão..." style="width: 300px;">
+           </div>
+          
+           <div class="card custom-card">
+             <div class="card-body p-0">
+               <div class="table-responsive">
+                 <table class="table table-hover mb-0">
+                   <thead>
+                     <tr>
+                       <th>ID Cartão</th>
+                       <th>Usuário</th>
+                       <th>Tipo</th>
+                       <th>Data Cadastro</th>
+                       <th>Status</th>
+                       <th>Ações</th>
+                     </tr>
+                   </thead>
+                   <tbody>
+                     <tr>
+                       <td>A1:B2:C3:D4</td>
+                       <td>Usuário 1</td>
+                       <td>RFID</td>
+                       <td>01/08/2026</td>
+                       <td><span class="status-badge status-ativo">Ativo</span></td>
+                       <td>
+                         <button class="btn btn-sm btn-outline-primary-lockcard me-1">
+                           <i class="bi bi-pencil"></i>
+                         </button>
+                         <button class="btn btn-sm btn-outline-danger">
+                           <i class="bi bi-trash"></i>
+                         </button>
+                       </td>
+                     </tr>
+                     <tr>
+                       <td>E5:F6:G7:H8</td>
+                       <td>Usuário 2</td>
+                       <td>NFC</td>
+                       <td>02/08/2026</td>
+                       <td><span class="status-badge status-ativo">Ativo</span></td>
+                       <td>
+                         <button class="btn btn-sm btn-outline-primary-lockcard me-1">
+                           <i class="bi bi-pencil"></i>
+                         </button>
+                         <button class="btn btn-sm btn-outline-danger">
+                           <i class="bi bi-trash"></i>
+                         </button>
+                       </td>
+                     </tr>
+                   </tbody>
+                 </table>
+               </div>
+             </div>
+           </div>
+         </section>
+        
+         <section id="acessos" class="content-section" style="display: none;">
+           <div class="section-header">
+             <h2><i class="bi bi-clock-history"></i> Registros de Acesso</h2>
+             <p class="text-muted">Histórico completo de todos os acessos</p>
+           </div>
+          
+           <div class="d-flex justify-content-between align-items-center mb-4">
+             <button id="exportarRelatorio" class="btn btn-primary-lockcard" type="button">
+               <i class="bi bi-download"></i> Exportar Relatório
+             </button>
+             <input type="date" class="form-control search-input" style="width: 200px;">
+           </div>
+          
+           <div class="card custom-card">
+             <div class="card-body p-0">
+               <div class="table-responsive">
+                 <table class="table table-hover mb-0">
+                   <thead>
+                     <tr>
+                       <th>Data/Hora</th>
+                       <th>Usuário</th>
+                       <th>Cartão</th>
+                       <th>Porta</th>
+                       <th>Tipo</th>
+                       <th>Status</th>
+                     </tr>
+                   </thead>
+                   <tbody>
+                     <tr>
+                       <td>04/08/2026 14:32:15</td>
+                       <td>Usuário 1</td>
+                       <td>A1:B2:C3:D4</td>
+                       <td>Porta Principal</td>
+                       <td>Cofre</td>
+                       <td><span class="badge bg-success">Permitido</span></td>
+                     </tr>
+                     <tr>
+                       <td>04/08/2026 14:28:42</td>
+                       <td>Usuário 2</td>
+                       <td>E5:F6:G7:H8</td>
+                       <td>Academia</td>
+                       <td>Porta</td>
+                       <td><span class="badge bg-success">Permitido</span></td>
+                     </tr>
+                     <tr>
+                       <td>04/08/2026 14:25:10</td>
+                       <td>Usuário 3</td>
+                       <td>I9:J0:K1:L2</td>
+                       <td>Porta Principal</td>
+                       <td>Porta</td>
+                       <td><span class="badge bg-danger">Negado</span></td>
+                     </tr>
+                   </tbody>
+                 </table>
+               </div>
+             </div>
+           </div>
+         </section>
+        
+         <section id="portas" class="content-section" style="display: none;">
+           <div class="section-header">
+             <h2><i class="bi bi-door-open-fill"></i> Gerenciar Portas</h2>
+             <p class="text-muted">Controle e monitore todas as portas do sistema</p>
+           </div>
+          
+           <div class="d-flex justify-content-between align-items-center mb-4">
+             <button class="btn btn-primary-lockcard" data-bs-toggle="modal" data-bs-target="#modalPorta">
+               <i class="bi bi-plus-circle"></i> Nova Porta
+             </button>
+           </div>
+          
+           <div class="row g-4">
+             <div class="col-md-4">
+               <div class="card custom-card text-center">
+                 <div class="card-body">
+                   <div class="door-icon">
+                     <i class="bi bi-door-open"></i>
+                   </div>
+                   <h4 class="mt-3">Porta Principal</h4>
+                   <p class="text-muted">Entrada do edifício</p>
+                   <div class="d-flex justify-content-center gap-2">
+                     <button class="btn btn-sm btn-success btn-abrir-porta" type="button" data-door="Porta Principal">
+                       <i class="bi bi-unlock"></i> Abrir
+                     </button>
+                     <button class="btn btn-sm btn-outline-primary-lockcard">
+                       <i class="bi bi-pencil"></i> Editar
+                     </button>
+                   </div>
+                 </div>
+               </div>
+             </div>
+            
+             <div class="col-md-4">
+               <div class="card custom-card text-center">
+                 <div class="card-body">
+                   <div class="door-icon">
+                     <i class="bi bi-dumbbell"></i>
+                   </div>
+                   <h4 class="mt-3">Academia</h4>
+                   <p class="text-muted">Acesso à área de exercícios</p>
+                   <div class="d-flex justify-content-center gap-2">
+                     <button class="btn btn-sm btn-success btn-abrir-porta" type="button" data-door="Academia">
+                       <i class="bi bi-unlock"></i> Abrir
+                     </button>
+                     <button class="btn btn-sm btn-outline-primary-lockcard">
+                       <i class="bi bi-pencil"></i> Editar
+                     </button>
+                   </div>
+                 </div>
+               </div>
+             </div>
+            
+             <div class="col-md-4">
+               <div class="card custom-card text-center">
+                 <div class="card-body">
+                   <div class="door-icon">
+                     <i class="bi bi-chat-square-text"></i>
+                   </div>
+                   <h4 class="mt-3">Sala de Reunião</h4>
+                   <p class="text-muted">Sala 201 - 2º andar</p>
+                   <div class="d-flex justify-content-center gap-2">
+                     <button class="btn btn-sm btn-success btn-abrir-porta" type="button" data-door="Sala de Reunião">
+                       <i class="bi bi-unlock"></i> Abrir
+                     </button>
+                     <button class="btn btn-sm btn-outline-primary-lockcard">
+                       <i class="bi bi-pencil"></i> Editar
+                     </button>
+                   </div>
+                 </div>
+               </div>
+             </div>
+           </div>
+         </section>
+        
+         <section id="relatorios" class="content-section" style="display: none;">
+           <div class="section-header">
+             <h2><i class="bi bi-graph-up-arrow"></i> Relatórios</h2>
+             <p class="text-muted">Análises e estatísticas do sistema</p>
+           </div>
+          
+           <div class="row g-4">
+             <div class="col-md-6">
+               <div class="card custom-card">
+                 <div class="card-header">
+                   <h5>Acessos por Usuário (Últimos 7 dias)</h5>
+                 </div>
+                 <div class="card-body">
+                   <canvas id="usuariosChart" height="200"></canvas>
+                 </div>
+               </div>
+             </div>
+            
+             <div class="col-md-6">
+               <div class="card custom-card">
+                 <div class="card-header">
+                   <h5>Acessos por Porta (Hoje)</h5>
+                 </div>
+                 <div class="card-body">
+                   <canvas id="portasChart" height="200"></canvas>
+                 </div>
+               </div>
+             </div>
+           </div>
+         </section>
+        
+       </div>
+     </div>
+   </div>
+ </main>
+  <div class="modal fade" id="modalUsuario" tabindex="-1">
+   <div class="modal-dialog modal-dialog-centered">
+     <div class="modal-content">
+       <div class="modal-header">
+         <h5 class="modal-title">
+           <i class="bi bi-person-plus-fill"></i> Novo Usuário
+         </h5>
+         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+       </div>
+       <div class="modal-body">
+         <form id="formUsuario">
+           <div class="mb-3">
+             <label class="form-label">Nome Completo</label>
+             <input type="text" class="form-control" required>
+           </div>
+           <div class="mb-3">
+             <label class="form-label">Email</label>
+             <input type="email" class="form-control" required>
+           </div>
+           <div class="mb-3">
+             <label class="form-label">Telefone</label>
+             <input type="tel" class="form-control" required>
+           </div>
+           <div class="mb-3">
+             <label class="form-label">Status</label>
+             <select class="form-select">
+               <option value="ativo">Ativo</option>
+               <option value="inativo">Inativo</option>
+             </select>
+           </div>
+         </form>
+       </div>
+       <div class="modal-footer">
+         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+         <button type="submit" class="btn btn-primary-lockcard">Salvar</button>
+       </div>
+     </div>
+   </div>
+ </div>
+ <div class="modal fade" id="modalCartao" tabindex="-1">
+   <div class="modal-dialog modal-dialog-centered">
+     <div class="modal-content">
+       <div class="modal-header">
+         <h5 class="modal-title"><i class="bi bi-credit-card-2-front-fill"></i> Novo Cartão</h5>
+         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+       </div>
+       <div class="modal-body">
+         <form id="formCartao">
+           <div class="mb-3">
+             <label class="form-label" for="cartaoId">Identificador do cartão</label>
+             <input id="cartaoId" type="text" class="form-control" required>
+           </div>
+           <div class="mb-3">
+             <label class="form-label" for="cartaoUsuario">Usuário</label>
+             <input id="cartaoUsuario" type="text" class="form-control" required>
+           </div>
+           <div class="mb-3">
+             <label class="form-label" for="cartaoTipo">Tipo</label>
+             <select id="cartaoTipo" class="form-select">
+               <option value="rfid">RFID</option>
+               <option value="nfc">NFC</option>
+             </select>
+           </div>
+         </form>
+       </div>
+       <div class="modal-footer">
+         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+         <button type="submit" class="btn btn-primary-lockcard">Salvar</button>
+       </div>
+     </div>
+   </div>
+ </div>
+ <div class="modal fade" id="modalPorta" tabindex="-1">
+   <div class="modal-dialog modal-dialog-centered">
+     <div class="modal-content">
+       <div class="modal-header">
+         <h5 class="modal-title"><i class="bi bi-door-open-fill"></i> Nova Porta</h5>
+         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+       </div>
+       <div class="modal-body">
+         <form id="formPorta">
+           <div class="mb-3">
+             <label class="form-label" for="portaNome">Nome da porta</label>
+             <input id="portaNome" type="text" class="form-control" required>
+           </div>
+           <div class="mb-3">
+             <label class="form-label" for="portaDescricao">Descrição</label>
+             <input id="portaDescricao" type="text" class="form-control" required>
+           </div>
+         </form>
+       </div>
+       <div class="modal-footer">
+         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+         <button type="submit" class="btn btn-primary-lockcard">Salvar</button>
+       </div>
+     </div>
+   </div>
+ </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="JavaScript.js"></script>
+</body>
+</html>
+
