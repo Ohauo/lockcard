@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   configurarFormularios();
   configurarAcoesDeTabela();
   configurarPortas();
+  configurarEdicaoModal();
   document.getElementById('exportarRelatorio')?.addEventListener('click', exportarRelatorio);
   inicializarGraficos();
 });
@@ -64,8 +65,8 @@ function renderizarAcessos(accesses) {
   document.getElementById('totalAcessos').textContent = accesses.length;
 }
 
-function formatarData(value) { return new Date(`${value.replace(' ', 'T')}Z`).toLocaleString('pt-BR'); }
-function formatarHora(value) { return new Date(`${value.replace(' ', 'T')}Z`).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); }
+function formatarData(value) { return new Date(value).toLocaleString('pt-BR'); }
+function formatarHora(value) { return new Date(value).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); }
 
 function configurarAutenticacao() {
   const authScreen = document.getElementById('authScreen');
@@ -209,16 +210,60 @@ function configurarAcoesDeTabela() {
       return;
     }
     if (button.classList.contains('btn-outline-primary-lockcard')) {
-      const cells = row.querySelectorAll('td');
-      const novoNome = prompt('Digite o novo nome:', cells[1]?.textContent.trim());
-      if (!novoNome || !resource || !row.dataset.id) return;
-      const payload = resource === 'users'
-        ? { name: novoNome, email: cells[2].textContent.trim(), phone: cells[3].textContent.trim(), status: cells[4].textContent.trim().toLowerCase() }
-        : { identifier: cells[0].textContent.trim(), userName: novoNome, type: cells[2].textContent.trim(), status: cells[4].textContent.trim().toLowerCase() };
-      await api(`/api/${resource}/${row.dataset.id}`, { method: 'PUT', body: JSON.stringify(payload) });
-      cells[1].textContent = novoNome;
+      abrirEdicao(resource, row.dataset.id, [...row.querySelectorAll('td')]);
     }
   }));
+}
+
+function configurarEdicaoModal() {
+  document.getElementById('formEdicao')?.addEventListener('submit', async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const type = form.querySelector('#edicaoTipo').value;
+    const id = form.querySelector('#edicaoId').value;
+    const payload = type === 'users'
+      ? { name: form.querySelector('#edicaoNome').value.trim(), email: form.querySelector('#edicaoEmail').value.trim(), phone: form.querySelector('#edicaoTelefone').value.trim(), status: form.querySelector('#edicaoStatus').value }
+      : type === 'cards'
+        ? { identifier: form.querySelector('#edicaoIdentificador').value.trim(), userName: form.querySelector('#edicaoUsuario').value.trim(), type: form.querySelector('#edicaoTipoCartao').value, status: form.querySelector('#edicaoStatus').value }
+        : { name: form.querySelector('#edicaoNome').value.trim(), description: form.querySelector('#edicaoDescricao').value.trim(), status: form.querySelector('#edicaoStatus').value };
+    try {
+      await api(`/api/${type}/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEdicao')).hide();
+      await carregarDados();
+    } catch (error) {
+      document.getElementById('edicaoErro').textContent = error.message;
+    }
+  });
+}
+
+function abrirEdicao(type, id, cells) {
+  if (!id) return;
+  const form = document.getElementById('formEdicao');
+  const groups = ['edicaoNomeGrupo', 'edicaoEmailGrupo', 'edicaoTelefoneGrupo', 'edicaoIdentificadorGrupo', 'edicaoUsuarioGrupo', 'edicaoTipoCartaoGrupo', 'edicaoDescricaoGrupo'];
+  groups.forEach(group => { document.getElementById(group).hidden = true; });
+  form.reset();
+  form.querySelector('#edicaoId').value = id;
+  form.querySelector('#edicaoTipo').value = type;
+  document.getElementById('edicaoErro').textContent = '';
+  if (type === 'users') {
+    ['edicaoNomeGrupo', 'edicaoEmailGrupo', 'edicaoTelefoneGrupo'].forEach(group => { document.getElementById(group).hidden = false; });
+    form.querySelector('#edicaoNome').value = cells[1].textContent.trim();
+    form.querySelector('#edicaoEmail').value = cells[2].textContent.trim();
+    form.querySelector('#edicaoTelefone').value = cells[3].textContent.trim();
+    form.querySelector('#edicaoStatus').value = cells[4].textContent.trim().toLowerCase();
+  } else if (type === 'cards') {
+    ['edicaoIdentificadorGrupo', 'edicaoUsuarioGrupo', 'edicaoTipoCartaoGrupo'].forEach(group => { document.getElementById(group).hidden = false; });
+    form.querySelector('#edicaoIdentificador').value = cells[0].textContent.trim();
+    form.querySelector('#edicaoUsuario').value = cells[1].textContent.trim();
+    form.querySelector('#edicaoTipoCartao').value = cells[2].textContent.trim();
+    form.querySelector('#edicaoStatus').value = cells[4].textContent.trim().toLowerCase();
+  } else {
+    ['edicaoNomeGrupo', 'edicaoDescricaoGrupo'].forEach(group => { document.getElementById(group).hidden = false; });
+    form.querySelector('#edicaoNome').value = cells[0].textContent.trim();
+    form.querySelector('#edicaoDescricao').value = cells[1].textContent.trim();
+    form.querySelector('#edicaoStatus').value = 'fechada';
+  }
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEdicao')).show();
 }
 
 function configurarPortas(root = document) {
@@ -248,15 +293,7 @@ function configurarPortas(root = document) {
       const title = card?.querySelector('h4');
       const description = card?.querySelector('.text-muted');
       if (!id || !title || !description) return;
-      const name = prompt('Digite o novo nome da porta:', title.textContent.trim());
-      if (!name) return;
-      const detail = prompt('Digite a nova descrição:', description.textContent.trim());
-      if (!detail) return;
-      await api(`/api/doors/${id}`, { method: 'PUT', body: JSON.stringify({ name, description: detail }) });
-      title.textContent = name;
-      description.textContent = detail;
-      const openButton = card.querySelector('.btn-abrir-porta');
-      if (openButton) openButton.dataset.door = name;
+      abrirEdicao('doors', id, [title, description]);
     });
   });
 }

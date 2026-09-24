@@ -2,3 +2,4 @@ lockcard.db
 lockcard.db-shm
 lockcard.db-wal
 node_modules/
+.env

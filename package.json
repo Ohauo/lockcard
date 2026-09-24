@@ -5,5 +5,9 @@
   "description": "Sistema de controle de acesso LockCard",
   "scripts": {
     "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.3",
+    "pg": "^8.23.0"
   }
 }
