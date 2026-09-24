@@ -351,6 +351,7 @@
                        <th>ID Cartão</th>
                        <th>Usuário</th>
                        <th>Tipo</th>
+                       <th>Porta</th>
                        <th>Data Cadastro</th>
                        <th>Status</th>
                        <th>Ações</th>
@@ -636,6 +637,12 @@
                <option value="nfc">NFC</option>
              </select>
            </div>
+           <div class="mb-3">
+             <label class="form-label" for="cartaoPorta">Porta vinculada</label>
+             <select id="cartaoPorta" class="form-select" required>
+               <option value="">Crie uma porta antes de vincular</option>
+             </select>
+           </div>
          </form>
        </div>
        <div class="modal-footer">
@@ -705,6 +712,10 @@
            <div id="edicaoTipoCartaoGrupo" class="mb-3">
              <label class="form-label" for="edicaoTipoCartao">Tipo</label>
              <select id="edicaoTipoCartao" class="form-select"><option>RFID</option><option>NFC</option></select>
+           </div>
+           <div id="edicaoPortaGrupo" class="mb-3">
+             <label class="form-label" for="edicaoPorta">Porta vinculada</label>
+             <select id="edicaoPorta" class="form-select" required></select>
            </div>
            <div id="edicaoDescricaoGrupo" class="mb-3">
              <label class="form-label" for="edicaoDescricao">Descrição</label>

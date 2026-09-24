@@ -1,5 +1,6 @@
 const storageKey = 'lockcard-dados';
 let currentAccount = null;
+let refreshTimer = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   configurarAutenticacao();
@@ -26,7 +27,7 @@ async function carregarDados() {
     ]);
     renderizarUsuarios(users);
     renderizarCartoes(cards);
-    renderizarPortas(doors);
+    renderizarPortas(doors, cards);
     renderizarAcessos(accesses);
   } catch (error) {
     console.error('Não foi possível carregar os dados:', error);
@@ -41,6 +42,10 @@ async function carregarRelatorios() {
   }
 }
 
+async function atualizarAplicacao() {
+  await Promise.all([carregarDados(), carregarRelatorios()]);
+}
+
 function renderizarUsuarios(users) {
   const tbody = document.getElementById('tabelaUsuarios');
   if (!tbody) return;
@@ -51,17 +56,21 @@ function renderizarUsuarios(users) {
 function renderizarCartoes(cards) {
   const tbody = document.getElementById('tabelaCartoes');
   if (!tbody) return;
-  tbody.innerHTML = cards.map(card => `<tr data-id="${card.id}"><td>${escapeHtml(card.identifier)}</td><td>${escapeHtml(card.user_name)}</td><td>${escapeHtml(card.type)}</td><td>${new Date(card.created_at).toLocaleDateString('pt-BR')}</td><td><span class="status-badge status-${card.status}">${card.status === 'ativo' ? 'Ativo' : 'Inativo'}</span></td><td><button class="btn btn-sm btn-outline-primary-lockcard me-1" type="button"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger" type="button"><i class="bi bi-trash"></i></button></td></tr>`).join('');
+  tbody.innerHTML = cards.map(card => `<tr data-id="${card.id}"><td>${escapeHtml(card.identifier)}</td><td>${escapeHtml(card.user_name)}</td><td>${escapeHtml(card.type)}</td><td>${escapeHtml(card.door_name || 'Sem porta')}</td><td>${new Date(card.created_at).toLocaleDateString('pt-BR')}</td><td><span class="status-badge status-${card.status}">${card.status === 'ativo' ? 'Ativo' : 'Inativo'}</span></td><td><button class="btn btn-sm btn-outline-primary-lockcard me-1" type="button"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger" type="button"><i class="bi bi-trash"></i></button></td></tr>`).join('');
   document.getElementById('totalCartoes').textContent = cards.length;
 }
 
-function renderizarPortas(doors) {
+function renderizarPortas(doors, cards) {
   document.getElementById('totalPortas').textContent = doors.length;
-  document.querySelectorAll('#portas .row.g-4 > .col-md-4').forEach(card => {
-    const name = card.querySelector('h4')?.textContent.trim();
-    const door = doors.find(item => item.name === name);
-    if (door) card.dataset.id = door.id;
-  });
+  const grid = document.querySelector('#portas .row.g-4');
+  if (grid) grid.innerHTML = doors.map(door => {
+    const linkedCard = cards.find(card => card.door_id === door.id);
+    return `<div class="col-md-4" data-id="${door.id}"><div class="card custom-card text-center"><div class="card-body"><div class="door-icon"><i class="bi bi-door-open"></i></div><h4 class="mt-3">${escapeHtml(door.name)}</h4><p class="text-muted">${escapeHtml(door.description)}</p><small class="text-muted d-block mb-3">${linkedCard ? `Cartão: ${escapeHtml(linkedCard.identifier)}` : 'Nenhum cartão vinculado'}</small><div class="d-flex justify-content-center gap-2"><button class="btn btn-sm btn-success btn-abrir-porta" type="button" data-door="${escapeHtml(door.name)}" data-card="${linkedCard ? escapeHtml(linkedCard.identifier) : ''}"><i class="bi bi-unlock"></i> Abrir</button><button class="btn btn-sm btn-outline-primary-lockcard" type="button"><i class="bi bi-pencil"></i> Editar</button></div></div></div></div>`;
+  }).join('');
+  const options = doors.map(door => `<option value="${door.id}">${escapeHtml(door.name)}</option>`).join('');
+  const selects = [document.getElementById('cartaoPorta'), document.getElementById('edicaoPorta')];
+  selects.forEach(select => { if (select) select.innerHTML = `<option value="">Selecione uma porta</option>${options}`; });
+  configurarPortas(document);
 }
 
 function renderizarAcessos(accesses) {
@@ -89,8 +98,8 @@ function configurarAutenticacao() {
     appMain.hidden = false;
     const admin = document.querySelector('.lockcard-header .btn-outline-light');
     if (admin && account) admin.innerHTML = `<i class="bi bi-person-circle"></i> ${escapeHtml(account.name)}`;
-    carregarDados();
-    carregarRelatorios();
+    atualizarAplicacao();
+    if (!refreshTimer) refreshTimer = setInterval(atualizarAplicacao, 3000);
   };
   api('/api/auth/me').then(result => {
     if (result.account) showApp(result.account);
@@ -176,9 +185,10 @@ function configurarFormularios() {
     const id = form.querySelector('#cartaoId').value.trim();
     const usuario = form.querySelector('#cartaoUsuario').value.trim();
     const tipo = form.querySelector('#cartaoTipo').value.toUpperCase();
-    if (!id || !usuario) return;
+    const portaId = form.querySelector('#cartaoPorta').value;
+    if (!id || !usuario || !portaId) return;
     let saved;
-    try { saved = await api('/api/cards', { method: 'POST', body: JSON.stringify({ identifier: id, userName: usuario, type: tipo }) }); }
+    try { saved = await api('/api/cards', { method: 'POST', body: JSON.stringify({ identifier: id, userName: usuario, type: tipo, doorId: portaId }) }); }
     catch (error) { alert(error.message); return; }
     adicionarLinha('cartoes', saved.id, `<td>${escapeHtml(id)}</td><td>${escapeHtml(usuario)}</td><td>${tipo}</td><td>${new Date().toLocaleDateString('pt-BR')}</td><td><span class="status-badge status-ativo">Ativo</span></td>`);
     fecharModal(form);
@@ -232,7 +242,7 @@ function configurarEdicaoModal() {
     const payload = type === 'users'
       ? { name: form.querySelector('#edicaoNome').value.trim(), email: form.querySelector('#edicaoEmail').value.trim(), phone: form.querySelector('#edicaoTelefone').value.trim(), status: form.querySelector('#edicaoStatus').value }
       : type === 'cards'
-        ? { identifier: form.querySelector('#edicaoIdentificador').value.trim(), userName: form.querySelector('#edicaoUsuario').value.trim(), type: form.querySelector('#edicaoTipoCartao').value, status: form.querySelector('#edicaoStatus').value }
+        ? { identifier: form.querySelector('#edicaoIdentificador').value.trim(), userName: form.querySelector('#edicaoUsuario').value.trim(), type: form.querySelector('#edicaoTipoCartao').value, doorId: form.querySelector('#edicaoPorta').value, status: form.querySelector('#edicaoStatus').value }
         : { name: form.querySelector('#edicaoNome').value.trim(), description: form.querySelector('#edicaoDescricao').value.trim(), status: form.querySelector('#edicaoStatus').value };
     try {
       await api(`/api/${type}/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
@@ -247,7 +257,7 @@ function configurarEdicaoModal() {
 function abrirEdicao(type, id, cells) {
   if (!id) return;
   const form = document.getElementById('formEdicao');
-  const groups = ['edicaoNomeGrupo', 'edicaoEmailGrupo', 'edicaoTelefoneGrupo', 'edicaoIdentificadorGrupo', 'edicaoUsuarioGrupo', 'edicaoTipoCartaoGrupo', 'edicaoDescricaoGrupo'];
+  const groups = ['edicaoNomeGrupo', 'edicaoEmailGrupo', 'edicaoTelefoneGrupo', 'edicaoIdentificadorGrupo', 'edicaoUsuarioGrupo', 'edicaoTipoCartaoGrupo', 'edicaoPortaGrupo', 'edicaoDescricaoGrupo'];
   groups.forEach(group => { document.getElementById(group).hidden = true; });
   form.reset();
   form.querySelector('#edicaoId').value = id;
@@ -260,11 +270,12 @@ function abrirEdicao(type, id, cells) {
     form.querySelector('#edicaoTelefone').value = cells[3].textContent.trim();
     form.querySelector('#edicaoStatus').value = cells[4].textContent.trim().toLowerCase();
   } else if (type === 'cards') {
-    ['edicaoIdentificadorGrupo', 'edicaoUsuarioGrupo', 'edicaoTipoCartaoGrupo'].forEach(group => { document.getElementById(group).hidden = false; });
+    ['edicaoIdentificadorGrupo', 'edicaoUsuarioGrupo', 'edicaoTipoCartaoGrupo', 'edicaoPortaGrupo'].forEach(group => { document.getElementById(group).hidden = false; });
     form.querySelector('#edicaoIdentificador').value = cells[0].textContent.trim();
     form.querySelector('#edicaoUsuario').value = cells[1].textContent.trim();
     form.querySelector('#edicaoTipoCartao').value = cells[2].textContent.trim();
-    form.querySelector('#edicaoStatus').value = cells[4].textContent.trim().toLowerCase();
+    form.querySelector('#edicaoPorta').value = [...form.querySelector('#edicaoPorta').options].find(option => option.textContent.trim() === cells[3].textContent.trim())?.value || '';
+    form.querySelector('#edicaoStatus').value = cells[5].textContent.trim().toLowerCase();
   } else {
     ['edicaoNomeGrupo', 'edicaoDescricaoGrupo'].forEach(group => { document.getElementById(group).hidden = false; });
     form.querySelector('#edicaoNome').value = cells[0].textContent.trim();
@@ -279,13 +290,17 @@ function configurarPortas(root = document) {
     if (button.dataset.configurado) return;
     button.dataset.configurado = 'true';
     button.addEventListener('click', async () => {
+      if (!button.dataset.card) {
+        alert('Esta porta ainda não possui um cartão vinculado.');
+        return;
+      }
       const aberta = button.dataset.aberta === 'true';
       button.dataset.aberta = String(!aberta);
       button.classList.toggle('btn-success', aberta);
       button.classList.toggle('btn-danger', !aberta);
       button.innerHTML = `<i class="bi bi-${aberta ? 'unlock' : 'lock'}"></i> ${aberta ? 'Abrir' : 'Fechar'}`;
       try {
-        await api('/api/accesses', { method: 'POST', body: JSON.stringify({ userName: currentAccount?.name || 'Usuário do sistema', card: '-', door: button.dataset.door, type: 'Porta', status: aberta ? 'Fechado' : 'Permitido' }) });
+        await api('/api/accesses', { method: 'POST', body: JSON.stringify({ userName: currentAccount?.name || 'Usuário do sistema', card: button.dataset.card, door: button.dataset.door, type: 'Porta', status: aberta ? 'Fechado' : 'Permitido', source: 'site' }) });
         await carregarDados();
       } catch (error) {
         alert(error.message);

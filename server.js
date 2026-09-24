@@ -39,6 +39,7 @@ async function initializeDatabase() {
       identifier text not null unique,
       user_name text not null,
       type text not null,
+      door_id bigint,
       status text not null default 'ativo',
       created_at timestamptz not null default now()
     );
@@ -68,28 +69,22 @@ async function initializeDatabase() {
       created_at timestamptz not null default now()
     );
   `);
+  await pool.query(`alter table cards add column if not exists door_id bigint`);
   await pool.query(`alter table access_logs add column if not exists source text not null default 'site'`);
   await pool.query(`alter table audit_logs add column if not exists source text not null default 'site'`);
-  await pool.query(`insert into doors (name, description) values
-    ('Porta Principal', 'Entrada do edifício'),
-    ('Academia', 'Acesso à área de exercícios'),
-    ('Sala de Reunião', 'Sala 201 - 2º andar')
-    on conflict do nothing`);
-  await pool.query(`insert into users (name, email, phone, status) values
-    ('Usuário 1', 'user1@email.com', '(DDD) XXXXX-XXXX', 'ativo'),
-    ('Usuário 2', 'user2@email.com', '(DDD) XXXXX-XXXX', 'ativo'),
-    ('Usuário 3', 'user3@email.com', '(DDD) XXXXX-XXXX', 'inativo')
-    on conflict do nothing`);
-  await pool.query(`insert into cards (identifier, user_name, type, created_at) values
-    ('A1:B2:C3:D4', 'Usuário 1', 'RFID', '2026-08-01T00:00:00Z'),
-    ('E5:F6:G7:H8', 'Usuário 2', 'NFC', '2026-08-02T00:00:00Z')
-    on conflict (identifier) do nothing`);
-  const accesses = await pool.query('select count(*)::int as total from access_logs');
-  if (accesses.rows[0].total === 0) {
-    await pool.query(`insert into access_logs (user_name, card, door, type, status, created_at) values
-      ('Usuário 1', 'A1:B2:C3:D4', 'Porta Principal', 'Cofre', 'Permitido', '2026-08-04T14:32:15Z'),
-      ('Usuário 2', 'E5:F6:G7:H8', 'Academia', 'Porta', 'Permitido', '2026-08-04T14:28:42Z'),
-      ('Usuário 3', 'I9:J0:K1:L2', 'Porta Principal', 'Porta', 'Negado', '2026-08-04T14:25:10Z')`);
+  await pool.query(`do $$ begin
+    if not exists (select 1 from pg_constraint where conname = 'cards_door_id_fkey') then
+      alter table cards add constraint cards_door_id_fkey foreign key (door_id) references doors(id) on delete restrict;
+    end if;
+  end $$`);
+  await pool.query(`create table if not exists schema_migrations (name text primary key, applied_at timestamptz not null default now())`);
+  const demoMigration = await pool.query(`select 1 from schema_migrations where name = 'remove-demo-records'`);
+  if (!demoMigration.rowCount) {
+    await pool.query(`delete from access_logs where card in ('A1:B2:C3:D4', 'E5:F6:G7:H8', 'I9:J0:K1:L2') or user_name in ('Usuário 1', 'Usuário 2', 'Usuário 3')`);
+    await pool.query(`delete from cards where identifier in ('A1:B2:C3:D4', 'E5:F6:G7:H8')`);
+    await pool.query(`delete from users where email in ('user1@email.com', 'user2@email.com', 'user3@email.com')`);
+    await pool.query(`delete from doors where name in ('Porta Principal', 'Academia', 'Sala de Reunião')`);
+    await pool.query(`insert into schema_migrations (name) values ('remove-demo-records')`);
   }
 }
 
@@ -182,7 +177,7 @@ async function handleApi(request, response, url) {
       const body = await readBody(request);
       const statements = {
         users: ['update users set name = $1, email = $2, phone = $3, status = $4 where id = $5', [body.name, body.email, body.phone, body.status, id]],
-        cards: ['update cards set identifier = $1, user_name = $2, type = $3, status = $4 where id = $5', [body.identifier, body.userName, body.type, body.status, id]],
+        cards: ['update cards set identifier = $1, user_name = $2, type = $3, status = $4, door_id = $5 where id = $6', [body.identifier, body.userName, body.type, body.status, body.doorId, id]],
         doors: ['update doors set name = $1, description = $2, status = $3 where id = $4', [body.name, body.description, body.status || 'fechada', id]]
       };
       const [sql, values] = statements[resource];
@@ -205,10 +200,13 @@ async function handleApi(request, response, url) {
       await logAction(account.id, 'create_user', body.email);
       return send(response, 201, result.rows[0]);
     }
-    if (request.method === 'GET' && url.pathname === '/api/cards') return send(response, 200, (await pool.query('select * from cards order by id desc')).rows);
+    if (request.method === 'GET' && url.pathname === '/api/cards') return send(response, 200, (await pool.query('select cards.*, doors.name as door_name from cards left join doors on doors.id = cards.door_id order by cards.id desc')).rows);
     if (request.method === 'POST' && url.pathname === '/api/cards') {
       const body = await readBody(request);
-      const result = await pool.query('insert into cards (identifier, user_name, type) values ($1, $2, $3) returning *', [body.identifier, body.userName, body.type]);
+      if (!body.doorId) return send(response, 400, { error: 'Vincule o cartão a uma porta antes de salvar.' });
+      const door = await pool.query('select id from doors where id = $1', [body.doorId]);
+      if (!door.rowCount) return send(response, 400, { error: 'A porta selecionada não existe.' });
+      const result = await pool.query('insert into cards (identifier, user_name, type, door_id) values ($1, $2, $3, $4) returning *', [body.identifier, body.userName, body.type, body.doorId]);
       await logAction(account.id, 'create_card', body.identifier);
       return send(response, 201, result.rows[0]);
     }
@@ -222,7 +220,12 @@ async function handleApi(request, response, url) {
     if (request.method === 'POST' && url.pathname === '/api/accesses') {
       const body = await readBody(request);
       const source = body.source === 'app' ? 'app' : 'site';
-      await pool.query('insert into access_logs (user_name, card, door, type, status, source) values ($1, $2, $3, $4, $5, $6)', [body.userName, body.card, body.door, body.type || 'Porta', body.status || 'Permitido', source]);
+      let status = body.status || 'Permitido';
+      if (status === 'Permitido') {
+        const linkedCard = await pool.query('select cards.id from cards join doors on doors.id = cards.door_id where cards.identifier = $1 and doors.name = $2', [body.card, body.door]);
+        if (!linkedCard.rowCount) return send(response, 403, { error: 'Este cartão não está vinculado a esta porta.' });
+      }
+      await pool.query('insert into access_logs (user_name, card, door, type, status, source) values ($1, $2, $3, $4, $5, $6)', [body.userName, body.card, body.door, body.type || 'Porta', status, source]);
       await logAction(account.id, 'create_access', body.door, source);
       return send(response, 201, { ok: true });
     }
