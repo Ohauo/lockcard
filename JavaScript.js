@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
   configurarPortas();
   configurarEdicaoModal();
   document.getElementById('exportarRelatorio')?.addEventListener('click', exportarRelatorio);
-  inicializarGraficos();
 });
 
 async function api(url, options = {}) {
@@ -31,6 +30,14 @@ async function carregarDados() {
     renderizarAcessos(accesses);
   } catch (error) {
     console.error('Não foi possível carregar os dados:', error);
+  }
+}
+
+async function carregarRelatorios() {
+  try {
+    atualizarGraficos(await api('/api/reports/summary'));
+  } catch (error) {
+    console.error('Não foi possível carregar os relatórios:', error);
   }
 }
 
@@ -83,6 +90,7 @@ function configurarAutenticacao() {
     const admin = document.querySelector('.lockcard-header .btn-outline-light');
     if (admin && account) admin.innerHTML = `<i class="bi bi-person-circle"></i> ${escapeHtml(account.name)}`;
     carregarDados();
+    carregarRelatorios();
   };
   api('/api/auth/me').then(result => {
     if (result.account) showApp(result.account);
@@ -327,16 +335,20 @@ function escapeHtml(value) {
   return value.replace(/[&<>'"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
 }
 
-function inicializarGraficos() {
+const charts = {};
+
+function atualizarGraficos(summary) {
   if (typeof Chart === 'undefined') return;
-  const configuracoes = [
-    { id: 'acessosChart', type: 'line', labels: ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'], data: [8, 12, 18, 15, 22, 30, 38, 33, 28, 20], color: '#00B5B8' },
-    { id: 'usuariosChart', type: 'bar', labels: ['Usuário 1', 'Usuário 2', 'Usuário 3', 'Usuário 4', 'Usuário 5'], data: [28, 35, 22, 18, 31], color: '#8B5CF6' },
-    { id: 'portasChart', type: 'doughnut', labels: ['Porta Principal', 'Academia', 'Sala de Reunião', 'Estacionamento', 'Cofre'], data: [450, 280, 150, 367, 89], color: ['#00CED1', '#40E0D0', '#8B5CF6', '#A78BFA', '#C4B5FD'] }
-  ];
-  configuracoes.forEach(config => {
-    const canvas = document.getElementById(config.id);
+  Object.values(charts).forEach(chart => chart.destroy());
+  const horas = Array.from({ length: 24 }, (_, hour) => `${String(hour).padStart(2, '0')}:00`);
+  const acessosPorHora = Object.fromEntries(summary.byHour.map(item => [item.hour, item.total]));
+  const criar = (id, type, labels, data, backgroundColor, options = {}) => {
+    const canvas = document.getElementById(id);
     if (!canvas) return;
-    new Chart(canvas, { type: config.type, data: { labels: config.labels, datasets: [{ label: 'Acessos', data: config.data, backgroundColor: config.color, borderColor: config.color, borderWidth: 2, tension: 0.4, fill: config.type === 'line' }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: config.type === 'doughnut' } }, scales: config.type === 'doughnut' ? {} : { y: { beginAtZero: true }, x: { grid: { display: false } } } } });
-  });
+    charts[id] = new Chart(canvas, { type, data: { labels, datasets: [{ label: 'Acessos', data, backgroundColor, borderColor: backgroundColor, borderWidth: 2, tension: 0.35, fill: type === 'line' }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: type === 'doughnut' } }, scales: type === 'doughnut' ? {} : { y: { beginAtZero: true }, x: { grid: { display: false } } }, ...options } });
+  };
+  criar('acessosChart', 'line', horas, horas.map((_, hour) => acessosPorHora[hour] || 0), '#00B5B8');
+  criar('usuariosChart', 'bar', summary.byUser.map(item => item.name), summary.byUser.map(item => item.total), '#8B5CF6');
+  criar('portasChart', 'doughnut', summary.byDoor.map(item => item.name), summary.byDoor.map(item => item.total), ['#00CED1', '#40E0D0', '#8B5CF6', '#A78BFA', '#C4B5FD']);
+  criar('origemChart', 'doughnut', summary.bySource.map(item => item.source === 'app' ? 'App' : 'Site'), summary.bySource.map(item => item.total), ['#00B5B8', '#8B5CF6']);
 }

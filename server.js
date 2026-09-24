@@ -56,6 +56,7 @@ async function initializeDatabase() {
       door text not null,
       type text not null,
       status text not null,
+      source text not null default 'site',
       created_at timestamptz not null default now()
     );
     create table if not exists audit_logs (
@@ -63,9 +64,12 @@ async function initializeDatabase() {
       account_id bigint references accounts(id),
       action text not null,
       details text,
+      source text not null default 'site',
       created_at timestamptz not null default now()
     );
   `);
+  await pool.query(`alter table access_logs add column if not exists source text not null default 'site'`);
+  await pool.query(`alter table audit_logs add column if not exists source text not null default 'site'`);
   await pool.query(`insert into doors (name, description) values
     ('Porta Principal', 'Entrada do edifício'),
     ('Academia', 'Acesso à área de exercícios'),
@@ -138,8 +142,8 @@ async function requireAccount(request, response) {
   return account;
 }
 
-async function logAction(accountId, action, details = '') {
-  await pool.query('insert into audit_logs (account_id, action, details) values ($1, $2, $3)', [accountId, action, details]);
+async function logAction(accountId, action, details = '', source = 'site') {
+  await pool.query('insert into audit_logs (account_id, action, details, source) values ($1, $2, $3, $4)', [accountId, action, details, source]);
 }
 
 async function handleApi(request, response, url) {
@@ -217,11 +221,30 @@ async function handleApi(request, response, url) {
     }
     if (request.method === 'POST' && url.pathname === '/api/accesses') {
       const body = await readBody(request);
-      await pool.query('insert into access_logs (user_name, card, door, type, status) values ($1, $2, $3, $4, $5)', [body.userName, body.card, body.door, body.type || 'Porta', body.status || 'Permitido']);
-      await logAction(account.id, 'create_access', body.door);
+      const source = body.source === 'app' ? 'app' : 'site';
+      await pool.query('insert into access_logs (user_name, card, door, type, status, source) values ($1, $2, $3, $4, $5, $6)', [body.userName, body.card, body.door, body.type || 'Porta', body.status || 'Permitido', source]);
+      await logAction(account.id, 'create_access', body.door, source);
       return send(response, 201, { ok: true });
     }
     if (request.method === 'GET' && url.pathname === '/api/accesses') return send(response, 200, (await pool.query('select * from access_logs order by id desc')).rows);
+    if (request.method === 'POST' && url.pathname === '/api/events') {
+      const body = await readBody(request);
+      const source = body.source === 'app' ? 'app' : 'site';
+      if (!body.action) return send(response, 400, { error: 'A ação do evento é obrigatória.' });
+      await logAction(account.id, body.action, JSON.stringify(body.details || {}), source);
+      return send(response, 201, { ok: true });
+    }
+    if (request.method === 'GET' && url.pathname === '/api/reports/summary') {
+      const [totals, byHour, byUser, byDoor, bySource, recentEvents] = await Promise.all([
+        pool.query(`select count(*)::int as total, count(*) filter (where status = 'Permitido')::int as allowed, count(*) filter (where status <> 'Permitido')::int as denied from access_logs`),
+        pool.query(`select extract(hour from created_at)::int as hour, count(*)::int as total from access_logs group by hour order by hour`),
+        pool.query(`select user_name as name, count(*)::int as total from access_logs group by user_name order by total desc`),
+        pool.query(`select door as name, count(*)::int as total from access_logs group by door order by total desc`),
+        pool.query(`select source, count(*)::int as total from access_logs group by source order by source`),
+        pool.query(`select user_name, card, door, type, status, source, created_at from access_logs order by created_at desc limit 20`)
+      ]);
+      return send(response, 200, { totals: totals.rows[0], byHour: byHour.rows, byUser: byUser.rows, byDoor: byDoor.rows, bySource: bySource.rows, recent: recentEvents.rows });
+    }
     return send(response, 404, { error: 'Rota não encontrada.' });
   } catch (error) {
     const message = error.code === '23505' ? 'Este registro já existe.' : 'Não foi possível concluir a operação.';
