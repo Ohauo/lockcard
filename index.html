@@ -15,7 +15,29 @@
    <link rel="stylesheet" href="style.css">
 </head>
 <body>
- <header class="lockcard-header">
+ <section id="authScreen" class="auth-screen">
+   <div class="auth-card">
+     <div class="auth-brand">LockCard</div>
+     <p class="auth-subtitle">Controle de acesso seguro</p>
+     <form id="loginForm">
+       <h2>Entrar</h2>
+       <input class="form-control" type="email" name="email" placeholder="E-mail" required>
+       <input class="form-control" type="password" name="password" placeholder="Senha" required>
+       <button class="btn btn-primary-lockcard w-100" type="submit">Entrar</button>
+       <p id="loginError" class="auth-error"></p>
+     </form>
+     <form id="registerForm" hidden>
+       <h2>Criar conta</h2>
+       <input class="form-control" type="text" name="name" placeholder="Nome completo" required>
+       <input class="form-control" type="email" name="email" placeholder="E-mail" required>
+       <input class="form-control" type="password" name="password" placeholder="Senha (mínimo 6 caracteres)" minlength="6" required>
+       <button class="btn btn-primary-lockcard w-100" type="submit">Cadastrar</button>
+       <p id="registerError" class="auth-error"></p>
+     </form>
+     <button id="toggleAuth" class="btn btn-link" type="button">Ainda não tenho uma conta</button>
+   </div>
+ </section>
+ <header id="appHeader" class="lockcard-header" hidden>
    <nav class="navbar navbar-expand-lg">
      <div class="container">
        <a class="navbar-brand" href="index.html">
@@ -57,7 +79,7 @@
      </div>
    </nav>
  </header>
-  <main class="lockcard-main">
+   <main id="appMain" class="lockcard-main" hidden>
    <div class="container-fluid py-4">
      <div class="row">
       
@@ -123,7 +145,7 @@
                    <i class="bi bi-people-fill"></i>
                  </div>
                  <div class="stat-content">
-                   <h3 class="stat-number">150</h3>
+                   <h3 id="totalUsuarios" class="stat-number">0</h3>
                    <p class="stat-label">Usuários Cadastrados</p>
                  </div>
                </div>
@@ -135,7 +157,7 @@
                    <i class="bi bi-credit-card-2-front-fill"></i>
                  </div>
                  <div class="stat-content">
-                   <h3 class="stat-number">180</h3>
+                   <h3 id="totalCartoes" class="stat-number">0</h3>
                    <p class="stat-label">Cartões Ativos</p>
                  </div>
                </div>
@@ -147,7 +169,7 @@
                    <i class="bi bi-door-open-fill"></i>
                  </div>
                  <div class="stat-content">
-                   <h3 class="stat-number">12</h3>
+                   <h3 id="totalPortas" class="stat-number">0</h3>
                    <p class="stat-label">Portas Monitoradas</p>
                  </div>
                </div>
@@ -159,7 +181,7 @@
                    <i class="bi bi-check-circle-fill"></i>
                  </div>
                  <div class="stat-content">
-                   <h3 class="stat-number">1,247</h3>
+                   <h3 id="totalAcessos" class="stat-number">0</h3>
                    <p class="stat-label">Acessos Hoje</p>
                  </div>
                </div>
@@ -184,7 +206,7 @@
                    <h5><i class="bi bi-bell-fill"></i> Últimos Acessos</h5>
                  </div>
                  <div class="card-body p-0">
-                   <div class="list-group list-group-flush">
+                   <div id="ultimosAcessos" class="list-group list-group-flush">
                      <div class="list-group-item d-flex justify-content-between align-items-center">
                        <div>
                          <strong>Usuário 1</strong><br>
@@ -254,7 +276,7 @@
                        <th>Ações</th>
                      </tr>
                    </thead>
-                   <tbody>
+                   <tbody id="tabelaUsuarios">
                      <tr>
                        <td>1</td>
                        <td>Usuário 1</td>
@@ -334,7 +356,7 @@
                        <th>Ações</th>
                      </tr>
                    </thead>
-                   <tbody>
+                   <tbody id="tabelaCartoes">
                      <tr>
                        <td>A1:B2:C3:D4</td>
                        <td>Usuário 1</td>
@@ -399,7 +421,7 @@
                        <th>Status</th>
                      </tr>
                    </thead>
-                   <tbody>
+                   <tbody id="tabelaAcessos">
                      <tr>
                        <td>04/08/2026 14:32:15</td>
                        <td>Usuário 1</td>
@@ -575,7 +597,7 @@
        </div>
        <div class="modal-footer">
          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-         <button type="submit" class="btn btn-primary-lockcard">Salvar</button>
+         <button type="submit" form="formUsuario" class="btn btn-primary-lockcard">Salvar</button>
        </div>
      </div>
    </div>
@@ -608,7 +630,7 @@
        </div>
        <div class="modal-footer">
          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-         <button type="submit" class="btn btn-primary-lockcard">Salvar</button>
+         <button type="submit" form="formCartao" class="btn btn-primary-lockcard">Salvar</button>
        </div>
      </div>
    </div>
@@ -634,7 +656,7 @@
        </div>
        <div class="modal-footer">
          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-         <button type="submit" class="btn btn-primary-lockcard">Salvar</button>
+         <button type="submit" form="formPorta" class="btn btn-primary-lockcard">Salvar</button>
        </div>
      </div>
    </div>

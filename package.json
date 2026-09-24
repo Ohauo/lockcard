@@ -1,0 +1,9 @@
+{
+  "name": "lockcard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sistema de controle de acesso LockCard",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

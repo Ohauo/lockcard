@@ -1,6 +1,8 @@
 const storageKey = 'lockcard-dados';
+let currentAccount = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+  configurarAutenticacao();
   configurarNavegacao();
   configurarBuscas();
   configurarFormularios();
@@ -9,6 +11,106 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('exportarRelatorio')?.addEventListener('click', exportarRelatorio);
   inicializarGraficos();
 });
+
+async function api(url, options = {}) {
+  const response = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...options });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Não foi possível concluir a operação.');
+  return data;
+}
+
+async function carregarDados() {
+  try {
+    const [users, cards, doors, accesses] = await Promise.all([
+      api('/api/users'), api('/api/cards'), api('/api/doors'), api('/api/accesses')
+    ]);
+    renderizarUsuarios(users);
+    renderizarCartoes(cards);
+    renderizarPortas(doors);
+    renderizarAcessos(accesses);
+  } catch (error) {
+    console.error('Não foi possível carregar os dados:', error);
+  }
+}
+
+function renderizarUsuarios(users) {
+  const tbody = document.getElementById('tabelaUsuarios');
+  if (!tbody) return;
+  tbody.innerHTML = users.map(user => `<tr data-id="${user.id}"><td>${user.id}</td><td>${escapeHtml(user.name)}</td><td>${escapeHtml(user.email)}</td><td>${escapeHtml(user.phone)}</td><td><span class="status-badge status-${user.status}">${user.status === 'ativo' ? 'Ativo' : 'Inativo'}</span></td><td><button class="btn btn-sm btn-outline-primary-lockcard me-1" type="button"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger" type="button"><i class="bi bi-trash"></i></button></td></tr>`).join('');
+  document.getElementById('totalUsuarios').textContent = users.length;
+}
+
+function renderizarCartoes(cards) {
+  const tbody = document.getElementById('tabelaCartoes');
+  if (!tbody) return;
+  tbody.innerHTML = cards.map(card => `<tr data-id="${card.id}"><td>${escapeHtml(card.identifier)}</td><td>${escapeHtml(card.user_name)}</td><td>${escapeHtml(card.type)}</td><td>${new Date(card.created_at).toLocaleDateString('pt-BR')}</td><td><span class="status-badge status-${card.status}">${card.status === 'ativo' ? 'Ativo' : 'Inativo'}</span></td><td><button class="btn btn-sm btn-outline-primary-lockcard me-1" type="button"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger" type="button"><i class="bi bi-trash"></i></button></td></tr>`).join('');
+  document.getElementById('totalCartoes').textContent = cards.length;
+}
+
+function renderizarPortas(doors) {
+  document.getElementById('totalPortas').textContent = doors.length;
+  document.querySelectorAll('#portas .row.g-4 > .col-md-4').forEach(card => {
+    const name = card.querySelector('h4')?.textContent.trim();
+    const door = doors.find(item => item.name === name);
+    if (door) card.dataset.id = door.id;
+  });
+}
+
+function renderizarAcessos(accesses) {
+  const tbody = document.getElementById('tabelaAcessos');
+  const recent = document.getElementById('ultimosAcessos');
+  if (tbody) tbody.innerHTML = accesses.map(access => `<tr><td>${formatarData(access.created_at)}</td><td>${escapeHtml(access.user_name)}</td><td>${escapeHtml(access.card)}</td><td>${escapeHtml(access.door)}</td><td>${escapeHtml(access.type)}</td><td><span class="badge ${access.status === 'Permitido' ? 'bg-success' : 'bg-danger'}">${escapeHtml(access.status)}</span></td></tr>`).join('');
+  if (recent) recent.innerHTML = accesses.slice(0, 5).map(access => `<div class="list-group-item d-flex justify-content-between align-items-center"><div><strong>${escapeHtml(access.user_name)}</strong><br><small class="text-muted">${escapeHtml(access.door)} - ${formatarHora(access.created_at)}</small></div><span class="badge ${access.status === 'Permitido' ? 'bg-success' : 'bg-danger'}">${escapeHtml(access.status)}</span></div>`).join('');
+  document.getElementById('totalAcessos').textContent = accesses.length;
+}
+
+function formatarData(value) { return new Date(`${value.replace(' ', 'T')}Z`).toLocaleString('pt-BR'); }
+function formatarHora(value) { return new Date(`${value.replace(' ', 'T')}Z`).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); }
+
+function configurarAutenticacao() {
+  const authScreen = document.getElementById('authScreen');
+  const appHeader = document.getElementById('appHeader');
+  const appMain = document.getElementById('appMain');
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  const toggle = document.getElementById('toggleAuth');
+  const showApp = account => {
+    currentAccount = account;
+    authScreen.hidden = true;
+    appHeader.hidden = false;
+    appMain.hidden = false;
+    const admin = document.querySelector('.lockcard-header .btn-outline-light');
+    if (admin && account) admin.innerHTML = `<i class="bi bi-person-circle"></i> ${escapeHtml(account.name)}`;
+    carregarDados();
+  };
+  api('/api/auth/me').then(result => {
+    if (result.account) showApp(result.account);
+  }).catch(() => {});
+  toggle.addEventListener('click', () => {
+    const registering = registerForm.hidden;
+    loginForm.hidden = registering;
+    registerForm.hidden = !registering;
+    toggle.textContent = registering ? 'Já tenho uma conta' : 'Ainda não tenho uma conta';
+  });
+  loginForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    try {
+      const account = await api('/api/auth/login', { method: 'POST', body: JSON.stringify(Object.fromEntries(new FormData(loginForm))) });
+      showApp(account);
+    } catch (error) {
+      document.getElementById('loginError').textContent = error.message;
+    }
+  });
+  registerForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    try {
+      const account = await api('/api/auth/register', { method: 'POST', body: JSON.stringify(Object.fromEntries(new FormData(registerForm))) });
+      showApp(account);
+    } catch (error) {
+      document.getElementById('registerError').textContent = error.message;
+    }
+  });
+}
 
 function configurarNavegacao() {
   const navLinks = document.querySelectorAll('.sidebar .nav-link');
@@ -44,7 +146,7 @@ function configurarBuscas() {
 }
 
 function configurarFormularios() {
-  document.getElementById('formUsuario')?.addEventListener('submit', event => {
+  document.getElementById('formUsuario')?.addEventListener('submit', async event => {
     event.preventDefault();
     const form = event.currentTarget;
     const nome = form.querySelector('input[type="text"]').value.trim();
@@ -52,29 +154,39 @@ function configurarFormularios() {
     const telefone = form.querySelector('input[type="tel"]').value.trim();
     const status = form.querySelector('select').value;
     if (!nome || !email || !telefone) return;
-    adicionarLinha('usuarios', `<td>${escapeHtml(nome)}</td><td>${escapeHtml(email)}</td><td>${escapeHtml(telefone)}</td><td><span class="status-badge status-${status}">${status === 'ativo' ? 'Ativo' : 'Inativo'}</span></td>`);
+    let saved;
+    try { saved = await api('/api/users', { method: 'POST', body: JSON.stringify({ name: nome, email, phone: telefone, status }) }); }
+    catch (error) { alert(error.message); return; }
+    adicionarLinha('usuarios', saved.id, `<td>${escapeHtml(nome)}</td><td>${escapeHtml(email)}</td><td>${escapeHtml(telefone)}</td><td><span class="status-badge status-${status}">${status === 'ativo' ? 'Ativo' : 'Inativo'}</span></td>`);
     fecharModal(form);
   });
 
-  document.getElementById('formCartao')?.addEventListener('submit', event => {
+  document.getElementById('formCartao')?.addEventListener('submit', async event => {
     event.preventDefault();
     const form = event.currentTarget;
     const id = form.querySelector('#cartaoId').value.trim();
     const usuario = form.querySelector('#cartaoUsuario').value.trim();
     const tipo = form.querySelector('#cartaoTipo').value.toUpperCase();
     if (!id || !usuario) return;
-    adicionarLinha('cartoes', `<td>${escapeHtml(id)}</td><td>${escapeHtml(usuario)}</td><td>${tipo}</td><td>${new Date().toLocaleDateString('pt-BR')}</td><td><span class="status-badge status-ativo">Ativo</span></td>`);
+    let saved;
+    try { saved = await api('/api/cards', { method: 'POST', body: JSON.stringify({ identifier: id, userName: usuario, type: tipo }) }); }
+    catch (error) { alert(error.message); return; }
+    adicionarLinha('cartoes', saved.id, `<td>${escapeHtml(id)}</td><td>${escapeHtml(usuario)}</td><td>${tipo}</td><td>${new Date().toLocaleDateString('pt-BR')}</td><td><span class="status-badge status-ativo">Ativo</span></td>`);
     fecharModal(form);
   });
 
-  document.getElementById('formPorta')?.addEventListener('submit', event => {
+  document.getElementById('formPorta')?.addEventListener('submit', async event => {
     event.preventDefault();
     const form = event.currentTarget;
     const nome = form.querySelector('#portaNome').value.trim();
     const descricao = form.querySelector('#portaDescricao').value.trim();
     if (!nome || !descricao) return;
+    let saved;
+    try { saved = await api('/api/doors', { method: 'POST', body: JSON.stringify({ name: nome, description: descricao }) }); }
+    catch (error) { alert(error.message); return; }
     const porta = document.createElement('div');
     porta.className = 'col-md-4';
+    porta.dataset.id = saved.id;
     porta.innerHTML = `<div class="card custom-card text-center"><div class="card-body"><div class="door-icon"><i class="bi bi-door-open"></i></div><h4 class="mt-3">${escapeHtml(nome)}</h4><p class="text-muted">${escapeHtml(descricao)}</p><div class="d-flex justify-content-center gap-2"><button class="btn btn-sm btn-success btn-abrir-porta" type="button" data-door="${escapeHtml(nome)}"><i class="bi bi-unlock"></i> Abrir</button><button class="btn btn-sm btn-outline-primary-lockcard" type="button">Editar</button></div></div></div>`;
     document.querySelector('#portas .row.g-4')?.appendChild(porta);
     configurarPortas(porta);
@@ -83,18 +195,28 @@ function configurarFormularios() {
 }
 
 function configurarAcoesDeTabela() {
-  document.querySelectorAll('tbody').forEach(tbody => tbody.addEventListener('click', event => {
+  document.querySelectorAll('tbody').forEach(tbody => tbody.addEventListener('click', async event => {
     const button = event.target.closest('button');
     const row = button?.closest('tr');
     if (!button || !row) return;
+    const sectionId = row.closest('.content-section')?.id;
+    const resource = { usuarios: 'users', cartoes: 'cards' }[sectionId];
     if (button.classList.contains('btn-outline-danger')) {
-      if (confirm('Deseja excluir este registro?')) row.remove();
+      if (confirm('Deseja excluir este registro?')) {
+        if (resource && row.dataset.id) await api(`/api/${resource}/${row.dataset.id}`, { method: 'DELETE' });
+        row.remove();
+      }
       return;
     }
     if (button.classList.contains('btn-outline-primary-lockcard')) {
       const cells = row.querySelectorAll('td');
       const novoNome = prompt('Digite o novo nome:', cells[1]?.textContent.trim());
-      if (novoNome) cells[1].textContent = novoNome;
+      if (!novoNome || !resource || !row.dataset.id) return;
+      const payload = resource === 'users'
+        ? { name: novoNome, email: cells[2].textContent.trim(), phone: cells[3].textContent.trim(), status: cells[4].textContent.trim().toLowerCase() }
+        : { identifier: cells[0].textContent.trim(), userName: novoNome, type: cells[2].textContent.trim(), status: cells[4].textContent.trim().toLowerCase() };
+      await api(`/api/${resource}/${row.dataset.id}`, { method: 'PUT', body: JSON.stringify(payload) });
+      cells[1].textContent = novoNome;
     }
   }));
 }
@@ -103,22 +225,48 @@ function configurarPortas(root = document) {
   root.querySelectorAll('.btn-abrir-porta').forEach(button => {
     if (button.dataset.configurado) return;
     button.dataset.configurado = 'true';
-    button.addEventListener('click', () => {
+    button.addEventListener('click', async () => {
       const aberta = button.dataset.aberta === 'true';
       button.dataset.aberta = String(!aberta);
       button.classList.toggle('btn-success', aberta);
       button.classList.toggle('btn-danger', !aberta);
       button.innerHTML = `<i class="bi bi-${aberta ? 'unlock' : 'lock'}"></i> ${aberta ? 'Abrir' : 'Fechar'}`;
-      console.log(`Porta ${button.dataset.door}: ${aberta ? 'fechada' : 'aberta'}`);
+      try {
+        await api('/api/accesses', { method: 'POST', body: JSON.stringify({ userName: currentAccount?.name || 'Usuário do sistema', card: '-', door: button.dataset.door, type: 'Porta', status: aberta ? 'Fechado' : 'Permitido' }) });
+        await carregarDados();
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+  });
+  root.querySelectorAll('#portas .btn-outline-primary-lockcard').forEach(button => {
+    if (button.dataset.edicaoConfigurada) return;
+    button.dataset.edicaoConfigurada = 'true';
+    button.addEventListener('click', async () => {
+      const card = button.closest('.col-md-4');
+      const id = card?.dataset.id;
+      const title = card?.querySelector('h4');
+      const description = card?.querySelector('.text-muted');
+      if (!id || !title || !description) return;
+      const name = prompt('Digite o novo nome da porta:', title.textContent.trim());
+      if (!name) return;
+      const detail = prompt('Digite a nova descrição:', description.textContent.trim());
+      if (!detail) return;
+      await api(`/api/doors/${id}`, { method: 'PUT', body: JSON.stringify({ name, description: detail }) });
+      title.textContent = name;
+      description.textContent = detail;
+      const openButton = card.querySelector('.btn-abrir-porta');
+      if (openButton) openButton.dataset.door = name;
     });
   });
 }
 
-function adicionarLinha(sectionId, cells) {
+function adicionarLinha(sectionId, id, cells) {
   const tbody = document.querySelector(`#${sectionId} tbody`);
   if (!tbody) return;
   const row = document.createElement('tr');
-  row.innerHTML = `<td>Novo</td>${cells}<td><button class="btn btn-sm btn-outline-primary-lockcard me-1" type="button"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger" type="button"><i class="bi bi-trash"></i></button></td>`;
+  row.dataset.id = id;
+  row.innerHTML = `<td>${id}</td>${cells}<td><button class="btn btn-sm btn-outline-primary-lockcard me-1" type="button"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger" type="button"><i class="bi bi-trash"></i></button></td>`;
   tbody.appendChild(row);
 }
 
