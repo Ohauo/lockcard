@@ -64,13 +64,15 @@ body {
 }
 
 .auth-brand {
- font-size: 2rem;
- font-weight: 700;
- text-align: center;
- background: var(--degrade-primario);
- -webkit-background-clip: text;
- -webkit-text-fill-color: transparent;
- background-clip: text;
+ display: flex;
+ justify-content: center;
+ margin-bottom: 1rem;
+}
+
+.auth-brand img {
+ width: min(100%, 280px);
+ height: auto;
+ display: block;
 }
 
 .auth-subtitle {
@@ -753,8 +755,8 @@ body::before {
 
 
 .navbar-logo {
- height: 40px;
- width: auto;
+ width: 150px;
+ height: 42px;
  object-fit: contain;
  transition: transform 0.3s ease;
 }
@@ -774,6 +776,12 @@ body::before {
  background-clip: text;
 }
 
+.sidebar-logo {
+ width: 92px;
+ height: 58px;
+ object-fit: contain;
+}
+
 
 .navbar-logo:hover {
  transform: scale(1.05);
@@ -782,15 +790,14 @@ body::before {
 
 @media (max-width: 768px) {
  .navbar-logo {
-   height: 35px;
+   width: 125px;
+   height: 36px;
  }
-}
 
-
-.sidebar-logo {
- height: 50px;
- width: auto;
- object-fit: contain;
+ .sidebar-logo {
+   width: 82px;
+   height: 52px;
+ }
 }
 
 
